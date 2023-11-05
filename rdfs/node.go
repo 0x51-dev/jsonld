@@ -2,39 +2,18 @@ package rdfs
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/0x51-dev/jsonld"
+	"strings"
 )
 
 type Node struct {
 	jsonld.Node
 
-	Label         jsonld.Literal `json:"rdfs:label"`
-	Comment       jsonld.Literal `json:"rdfs:comment"`
-	SubPropertyOf SubOf          `json:"rdfs:subPropertyOf"`
-	SubClassOf    SubOf          `json:"subClassOf"`
-}
-
-type SubOf []jsonld.NodeReference
-
-func (of *SubOf) UnmarshalJSON(bytes []byte) error {
-	var id jsonld.NodeReference
-	if err := json.Unmarshal(bytes, &id); err == nil {
-		*of = []jsonld.NodeReference{id}
-		return nil
-	}
-	var ids []jsonld.NodeReference
-	if err := json.Unmarshal(bytes, &ids); err == nil {
-		*of = ids
-		return nil
-	}
-	return nil
-}
-
-func (of SubOf) MarshalJSON() ([]byte, error) {
-	if len(of) == 1 {
-		return json.Marshal(of[0])
-	}
-	return json.Marshal([]jsonld.NodeReference(of))
+	Label         jsonld.Literal        `json:"rdfs:label"`
+	Comment       jsonld.Literal        `json:"rdfs:comment"`
+	SubPropertyOf jsonld.NodeReferences `json:"rdfs:subPropertyOf"`
+	SubClassOf    jsonld.NodeReferences `json:"subClassOf"`
 }
 
 func (node *Node) UnmarshalJSON(bytes []byte) error {
@@ -42,15 +21,19 @@ func (node *Node) UnmarshalJSON(bytes []byte) error {
 }
 
 func (node *Node) UnmarshalValue(key string, bytes []byte) error {
-	switch key {
-	case "rdfs:label":
-		return json.Unmarshal(bytes, &node.Label)
-	case "rdfs:comment":
-		return json.Unmarshal(bytes, &node.Comment)
-	case "rdfs:subPropertyOf":
-		return json.Unmarshal(bytes, &node.SubPropertyOf)
-	case "rdfs:subClassOf":
-		return json.Unmarshal(bytes, &node.SubClassOf)
+	if strings.HasPrefix(key, "rdfs:") {
+		switch key {
+		case "rdfs:label":
+			return json.Unmarshal(bytes, &node.Label)
+		case "rdfs:comment":
+			return json.Unmarshal(bytes, &node.Comment)
+		case "rdfs:subPropertyOf":
+			return json.Unmarshal(bytes, &node.SubPropertyOf)
+		case "rdfs:subClassOf":
+			return json.Unmarshal(bytes, &node.SubClassOf)
+		default:
+			return fmt.Errorf("unknown keyword: %s", key)
+		}
 	}
 	return node.Node.UnmarshalValue(key, bytes)
 }

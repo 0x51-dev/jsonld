@@ -10,6 +10,29 @@ type NodeReference struct {
 	ID string `json:"@id"`
 }
 
+type NodeReferences []NodeReference
+
+func (ns *NodeReferences) UnmarshalJSON(bytes []byte) error {
+	var id NodeReference
+	if err := json.Unmarshal(bytes, &id); err == nil {
+		*ns = []NodeReference{id}
+		return nil
+	}
+	var ids []NodeReference
+	if err := json.Unmarshal(bytes, &ids); err == nil {
+		*ns = ids
+		return nil
+	}
+	return nil
+}
+
+func (ns NodeReferences) MarshalJSON() ([]byte, error) {
+	if len(ns) == 1 {
+		return json.Marshal(ns[0])
+	}
+	return json.Marshal([]NodeReference(ns))
+}
+
 type Node struct {
 	ID       string `json:"@id"`
 	Type     Type   `json:"@type,omitempty"`

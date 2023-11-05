@@ -1,4 +1,4 @@
-package rdfs
+package schema
 
 import (
 	"encoding/json"
